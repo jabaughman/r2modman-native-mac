@@ -2,7 +2,8 @@ import InteractionProvider, {
     InteractionProviderFileProperties,
     InteractionProviderFolderProperties
 } from '../../providers/ror2/system/InteractionProvider';
-import { clipboard, ipcRenderer, OpenDialogOptions } from 'electron';
+import { clipboard, ipcRenderer } from 'electron';
+import { desktopDialogs } from '../../utils/DesktopDialogs';
 
 export default class InteractionProviderImpl extends InteractionProvider {
 
@@ -11,30 +12,11 @@ export default class InteractionProviderImpl extends InteractionProvider {
     }
 
     async selectFolder(options: InteractionProviderFolderProperties): Promise<string[]> {
-        return new Promise(resolve => {
-
-            const fileOpts = options as unknown as OpenDialogOptions;
-            fileOpts.properties = ['openDirectory', 'showHiddenFiles'];
-
-
-            ipcRenderer.once('receive-open-dialog', (_, args) => {
-                resolve(args.filePaths);
-            });
-            ipcRenderer.send('show-open-dialog', fileOpts);
-        });
+        return desktopDialogs().selectFolder(options);
     }
 
     async selectFile(options: InteractionProviderFileProperties): Promise<string[]> {
-        return new Promise(resolve => {
-
-            const fileOpts = options as unknown as OpenDialogOptions;
-            fileOpts.properties = ['openFile', 'showHiddenFiles'];
-
-            ipcRenderer.once('receive-open-dialog', (_, args) => {
-                resolve(args.filePaths);
-            });
-            ipcRenderer.send('show-open-dialog', fileOpts);
-        });
+        return desktopDialogs().selectFile(options);
     }
 
 

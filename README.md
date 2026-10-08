@@ -41,6 +41,8 @@ Tested on Apple Silicon: UI startup, catalog refresh, configuration discovery, p
 ```sh
 node test/security/hardening.js
 node test/security/valheim-launch.js
+node test/security/local-overrides.js
+node test/security/dialog-bridge.js
 ```
 
 The legacy renderer still requires Node integration, disabled context isolation, and disabled web security. Updating Electron does not remove those architectural limitations. The existing Vue 2 / Quasar build toolchain also remains in place.
@@ -52,3 +54,5 @@ No personal profiles, saves, or downloaded third-party mod DLLs are included. Or
 After replacing a mod's files with an author-provided Mac build, expand that mod on the Installed page and select **Protect local files**. This saves the current plugin directory under the profile's `.local-overrides` directory and adds a **Local replacement protected** badge. Catalog installs, updates, local reinstalls, and uninstalls are blocked for that package until you select **Release protection**. Other mods can still be updated normally.
 
 **Restore local backup** restores the saved plugin files and enables protection again. Enable a disabled mod before creating or restoring its backup. Release protection retains the backup; protecting again after release replaces it with a snapshot of the current files. These snapshots contain the replacement you protected, not an automatic copy of the original catalog package. Game saves and configuration files are outside this backup. Profile sharing does not transfer these local snapshots.
+
+The renderer isolation inventory and first preload migration are documented in [docs/renderer-isolation.md](docs/renderer-isolation.md). Native pickers use a narrow preload API; the remaining Node-dependent renderer services still need migration before isolation can be enabled.
