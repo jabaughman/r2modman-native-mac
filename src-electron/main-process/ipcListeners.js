@@ -1,6 +1,7 @@
 import { ipcMain, dialog, clipboard, shell } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import os from 'os';
+import { registerProfileConfigHandlers } from './profileConfigHandlers';
 import { registerProfileLogHandlers } from './profileLogHandlers';
 import { registerShellHandlers } from './shellHandlers';
 import { registerDialogHandlers } from './dialogHandlers';
@@ -43,6 +44,8 @@ export const forwardInstallRequest = registerLifecycleHandlers(ipcMain, {
 
 registerShellHandlers(ipcMain, shell, () => browserWindow, process.env.APP_URL);
 
-registerProfileLogHandlers(ipcMain, {
+const profileFiles = registerProfileLogHandlers(ipcMain, {
     clipboard
 }, () => browserWindow, process.env.APP_URL);
+
+registerProfileConfigHandlers(ipcMain, profileFiles, () => browserWindow, process.env.APP_URL);

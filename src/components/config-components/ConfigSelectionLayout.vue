@@ -58,7 +58,7 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import ConfigFile from '../../model/file/ConfigFile';
 import * as path from 'path';
-import FileTree from '../../model/file/FileTree';
+import { desktopProfileConfigs } from '../../utils/DesktopProfileConfigs';
 import R2Error from '../../model/errors/R2Error';
 import { ExpandableCard, Hero } from '../all';
 import { SortConfigFile } from '../../model/real_enums/sort/SortConfigFile';
@@ -67,7 +67,6 @@ import ConfigSort from '../../r2mm/configs/ConfigSort';
 import FsProvider from '../../providers/generic/file/FsProvider';
 import ManagerInformation from '../../_managerinf/ManagerInformation';
 import LinkProvider from '../../providers/components/LinkProvider';
-import ProfileModList from '../../r2mm/mods/ProfileModList';
 
 @Component({
         components: {
@@ -102,39 +101,19 @@ import ProfileModList from '../../r2mm/mods/ProfileModList';
         }
 
         async created() {
-            const fs = FsProvider.instance;
-            const configLocation = this.$store.getters['profile/activeProfile'].getPathOfProfile();
-            const tree = await FileTree.buildFromLocation(configLocation);
-            if (tree instanceof R2Error) {
-                return;
-            }
-            tree.removeDirectories("dotnet");
-            tree.removeDirectories("_state");
-            tree.navigateAndPerform(plugins => {
-                plugins.getDirectories().forEach(value => {
-                    plugins.navigateAndPerform(sub => {
-                        // Remove all manifest.json files from the root of the plugins subdirectory.
-                        sub.removeFilesWithBasename("manifest.json");
-                    }, value.getDirectoryName())
+            const profile = this.$store.getters['profile/activeProfile'];
+            const game = this.$store.state.activeGame;
+            try {
+                const files = await desktopProfileConfigs().list({
+                    game: game.internalFolderName, profile: profile.getProfileName()
                 });
-            }, "BepInEx", "plugins");
-            const files = tree.getDirectories().flatMap(value => value.getRecursiveFiles());
-            const supportedExtensions = ProfileModList.SUPPORTED_CONFIG_FILE_EXTENSIONS;
-            for (const file of files) {
-                if (supportedExtensions.includes(path.extname(file).toLowerCase())) {
-                    const fileStat = await fs.lstat(file);
-                    this.configFiles.push(new ConfigFile(file.substring(configLocation.length + 1), file, fileStat.mtime));
-                }
+                this.configFiles = files.map(file => new ConfigFile(
+                    file.relativePath, path.join(profile.getPathOfProfile(), file.relativePath), new Date(file.modifiedAt)
+                ));
+                this.textChanged();
+            } catch (error) {
+                this.$store.commit('error/handleError', R2Error.fromThrownValue(error, 'Failed to discover config files'));
             }
-
-            // HACK: Force the UE4SS-settings.ini file for shimloader mod installs to be visible.
-            const ue4ssSettingsPath = tree.getFiles().find(x => x.toLowerCase().endsWith("ue4ss-settings.ini"));
-            if (ue4ssSettingsPath) {
-                const lstat = await fs.lstat(ue4ssSettingsPath);
-                this.configFiles.push(new ConfigFile("UE4SS-settings.ini", ue4ssSettingsPath, lstat.mtime));
-            }
-
-            this.shownConfigFiles = [...this.configFiles];
         }
 
         async deleteConfig(file: ConfigFile) {

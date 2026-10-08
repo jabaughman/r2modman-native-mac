@@ -34,7 +34,11 @@ const profileLogs = Object.freeze({
     copy: scope => ipcRenderer.invoke('desktop:copy-profile-log', scope)
 });
 
-for (const [name, api] of [['r2modmanDialogs', dialogs], ['r2modmanDesktop', desktop], ['r2modmanShell', shell], ['r2modmanProfileLogs', profileLogs]]) {
+const profileConfigs = Object.freeze({
+    list: scope => ipcRenderer.invoke('desktop:list-profile-configs', scope)
+});
+
+for (const [name, api] of [['r2modmanDialogs', dialogs], ['r2modmanDesktop', desktop], ['r2modmanShell', shell], ['r2modmanProfileLogs', profileLogs], ['r2modmanProfileConfigs', profileConfigs]]) {
     if (process.contextIsolated) {
         contextBridge.exposeInMainWorld(name, api);
     } else {

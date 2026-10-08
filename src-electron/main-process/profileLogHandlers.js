@@ -28,6 +28,19 @@ function registerProfileLogHandlers(ipcMain, services, getWindow, appUrl) {
         if (dataRoot && dataRoot !== canonical) throw new Error('Log data root is already initialized; restart to change it');
         dataRoot = canonical;
     });
+    async function profilePath(scope) {
+        if (!dataRoot) throw new Error('Log data root has not been initialized');
+        if (!scope || typeof scope !== 'object') throw new Error('Invalid profile scope');
+        const profile = path.join(dataRoot, component(scope.game), 'profiles', component(scope.profile));
+        let current = dataRoot;
+        for (const segment of path.relative(dataRoot, profile).split(path.sep)) {
+            current = path.join(current, segment);
+            const stat = await fs.lstat(current);
+            if (stat.isSymbolicLink()) throw new Error('Profile contains a symbolic link');
+            if (!stat.isDirectory()) throw new Error('Profile is not a directory');
+        }
+        return profile;
+    }
     async function logPath(scope) {
         if (!dataRoot) throw new Error('Log data root has not been initialized');
         if (!scope || typeof scope !== 'object' || !Object.prototype.hasOwnProperty.call(LOGS, scope.loader)) throw new Error('Unsupported log loader');
@@ -66,5 +79,6 @@ function registerProfileLogHandlers(ipcMain, services, getWindow, appUrl) {
             services.clipboard.writeText(text.length >= 1992 ? text : `\`\`\`\n${text}\n\`\`\``);
         } finally { await file.close(); }
     });
+    return { profilePath };
 }
 module.exports = { registerProfileLogHandlers };
