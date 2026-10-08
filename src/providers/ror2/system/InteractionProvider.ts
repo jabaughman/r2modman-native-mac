@@ -19,11 +19,11 @@ export default abstract class InteractionProvider {
 
     public abstract selectFile(options: InteractionProviderFileProperties): Promise<string[]>;
 
-    public abstract restartApp(): void;
+    public abstract restartApp(): Promise<void>;
 
-    public abstract hookModInstallProtocol(callback: (data: any) => void): void;
+    public abstract hookModInstallProtocol(callback: (data: string) => void): () => void;
 
-    public abstract copyToClipboard(value: string): void;
+    public abstract copyToClipboard(value: string): Promise<void>;
 
 }
 

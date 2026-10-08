@@ -1,7 +1,8 @@
-import { ipcMain, dialog } from 'electron';
+import { ipcMain, dialog, clipboard } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import os from 'os';
 import { registerDialogHandlers } from './dialogHandlers';
+import { registerLifecycleHandlers } from './lifecycleHandlers';
 
 let browserWindow;
 let app;
@@ -13,60 +14,27 @@ export default class Listeners {
     }
 }
 
-ipcMain.on('get-browser-window', ()=>{
-    browserWindow.webContents.send('receive-browser-window', browserWindow);
-});
+function isPortable() {
+    if (process.platform === 'win32') return process.execPath.startsWith(os.tmpdir());
+    // Preserve the existing Linux interpretation until Manager.vue is refactored.
+    if (process.platform === 'linux') return typeof process.env.APPIMAGE === 'undefined';
+    return false;
+}
 
-ipcMain.on('update-app', ()=>{
+function prepareUpdates() {
     // Locally hardened macOS builds must not be replaced by an unreviewed updater.
-    if (process.platform === 'darwin') {
-        browserWindow.webContents.send('update-done');
-        return;
-    }
-    if (typeof process.env.APPIMAGE !== "undefined" || !process.execPath.startsWith(os.tmpdir())) {
+    if (process.platform === 'darwin') return;
+    if (typeof process.env.APPIMAGE !== 'undefined' || !process.execPath.startsWith(os.tmpdir())) {
         autoUpdater.autoDownload = true;
-        autoUpdater.checkForUpdatesAndNotify();
-        browserWindow.webContents.send('update-done');
-    } else {
-        browserWindow.webContents.send('update-done');
+        // This acknowledges setup, as the legacy update-done signal did; it does
+        // not wait for a download or block catalog loading on a failed check.
+        try {
+            Promise.resolve(autoUpdater.checkForUpdatesAndNotify()).catch(error => console.error('Update check failed', error));
+        } catch (error) { console.error('Update check failed', error); }
     }
-});
-
-ipcMain.on('install-via-thunderstore', (installString) => {
-    browserWindow.webContents.send('install-from-thunderstore-string', installString);
-});
-
-ipcMain.on('get-appData-directory', ()=>{
-    browserWindow.webContents.send('receive-appData-directory', app.getPath('appData'));
-});
-
-ipcMain.on('get-is-portable', ()=>{
-    let isPortable = false;
-    switch(process.platform){
-        case "win32":
-            isPortable = process.execPath.startsWith(os.tmpdir());
-            break;
-        case "linux":
-            // The correct way to handle this should be
-            // isPortable = typeof process.env.APPIMAGE !== "undefined";
-            // but since Manager.vue needs a refactor, we do the opposite
-            isPortable = typeof process.env.APPIMAGE === "undefined";
-            break;
-    }
-    browserWindow.webContents.send('receive-is-portable', isPortable);
-});
-
-ipcMain.on('restart', ()=>{
-    app.relaunch();
-    app.exit();
-});
-
-ipcMain.on('get-assets-path', ()=>{
-    if (process.env.PROD) {
-        browserWindow.webContents.send('receive-assets-path', global.__statics);
-    } else {
-        browserWindow.webContents.send('receive-assets-path', 'src/statics/');
-    }
-});
+}
 
 registerDialogHandlers(ipcMain, dialog, () => browserWindow, process.env.APP_URL);
+export const forwardInstallRequest = registerLifecycleHandlers(ipcMain, {
+    get app() { return app; }, clipboard, isPortable, prepareUpdates
+}, () => browserWindow, process.env.APP_URL);

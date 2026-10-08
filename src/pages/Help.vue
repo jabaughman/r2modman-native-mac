@@ -122,8 +122,9 @@ export default class Help extends Vue {
         this.activeTab = key;
     }
 
-    copyDoorstopTargetToClipboard() {
-        InteractionProvider.instance.copyToClipboard(this.doorstopTarget);
+    async copyDoorstopTargetToClipboard() {
+        try { await InteractionProvider.instance.copyToClipboard(this.doorstopTarget); }
+        catch (e) { this.$store.commit('error/handleError', R2Error.fromThrownValue(e)); return; }
         this.copyingDoorstopText = true;
         setTimeout(this.stopShowingCopy, 400);
     }
