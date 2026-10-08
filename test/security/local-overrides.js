@@ -14,6 +14,12 @@ const Installer = require('../../src/r2mm/installing/profile_installers/GenericP
     const root = await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()), 'r2mm-overrides-'));
     const name = 'Author-MacPlugin';
     try {
+        assert.equal(await overrides.guardLocalOverride(root, 'Custom local mod-v2'), null);
+        // Unprotected packages do not need a BepInEx directory or a particular layout.
+        await fs.ensureDir(path.join(root, 'BepInEx/plugins'));
+        await fs.symlink(root, path.join(root, 'BepInEx/plugins/Other-Plugin'));
+        assert.equal(await overrides.guardLocalOverride(root, 'Other-Plugin'), null);
+        await fs.remove(path.join(root, 'BepInEx/plugins/Other-Plugin'));
         const p = await overrides.overridePaths(root, name);
         await fs.ensureDir(p.directory);
         await fs.writeFile(path.join(p.directory, 'plugin.dll'), 'mac replacement');

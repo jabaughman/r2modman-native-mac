@@ -5,7 +5,7 @@ import { resolveArchivePath } from './SafePaths';
 
 // Backups live outside the package directory so uninstall/reinstall cannot erase them.
 export async function overridePaths(profile: string, name: string) {
-    if (!/^[A-Za-z0-9_]+-[A-Za-z0-9_]+$/.test(name)) throw new Error('Invalid package name');
+    validateName(name);
     const directory = await resolveArchivePath(profile, `BepInEx/plugins/${name}`);
     const root = await resolveArchivePath(profile, `.local-overrides/${name}`);
     return { directory, root,
@@ -15,8 +15,10 @@ export async function overridePaths(profile: string, name: string) {
 }
 
 export async function isLocalOverride(profile: string, name: string): Promise<boolean> {
-    const p = await overridePaths(profile, name);
-    return fs.pathExists(p.marker);
+    validateName(name);
+    // Checking protection must not constrain another game's plugin layout.
+    const marker = await resolveArchivePath(profile, `.local-overrides/${name}/protected.json`);
+    return fs.pathExists(marker);
 }
 
 export async function guardLocalOverride(profile: string, name: string): Promise<R2Error | null> {
@@ -72,5 +74,11 @@ async function validateTree(directory: string): Promise<void> {
         const child = await fs.lstat(file);
         if (child.isSymbolicLink()) throw new Error('Local replacement contains a symbolic link');
         if (child.isDirectory()) await validateTree(file);
+    }
+}
+
+function validateName(name: string): void {
+    if (!name || name === '.' || name === '..' || /[/\\:\0]/.test(name)) {
+        throw new Error('Invalid package name');
     }
 }
