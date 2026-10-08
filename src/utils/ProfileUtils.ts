@@ -18,6 +18,8 @@ import ProfileModList from "../r2mm/mods/ProfileModList";
 export async function extractZippedProfileFile(file: string, profileName: string) {
     const entries = await ZipProvider.instance.getEntries(file);
     for (const entry of entries) {
+        // Local snapshots belong to this machine and cannot be supplied by an import.
+        if (path.posix.normalize(entry.entryName.replace(/\\/g, "/")).split("/")[0] === ".local-overrides") continue;
         if (entry.entryName.startsWith('config/') || entry.entryName.startsWith("config\\")) {
             await ZipProvider.instance.extractEntryTo(
                 file,

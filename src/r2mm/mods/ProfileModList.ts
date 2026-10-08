@@ -202,6 +202,7 @@ export default class ProfileModList {
         }
         tree.removeDirectories("dotnet");
         tree.removeDirectories("_state");
+        tree.removeDirectories(".local-overrides");
         tree.navigateAndPerform(bepInExDir => {
             bepInExDir.removeDirectories("config");
             bepInExDir.navigateAndPerform(pluginDir => {
