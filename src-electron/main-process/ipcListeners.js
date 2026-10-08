@@ -1,6 +1,7 @@
 import { ipcMain, dialog } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import os from 'os';
+import { registerDialogHandlers } from './dialogHandlers';
 
 let browserWindow;
 let app;
@@ -68,9 +69,4 @@ ipcMain.on('get-assets-path', ()=>{
     }
 });
 
-ipcMain.on('show-open-dialog', (arg, fileOpts) => {
-  dialog.showOpenDialog(browserWindow, fileOpts).then(r => {
-    browserWindow.webContents.send('receive-open-dialog', r);
-  });
-});
-
+registerDialogHandlers(ipcMain, dialog, () => browserWindow, process.env.APP_URL);

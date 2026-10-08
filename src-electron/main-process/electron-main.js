@@ -40,6 +40,9 @@ function createWindow() {
         height: windowSize.height,
         useContentSize: true,
         webPreferences: {
+            preload: process.env.PROD
+                ? path.join(__dirname, 'electron-preload.js')
+                : path.join(process.cwd(), 'src-electron/main-process/electron-preload.js'),
             nodeIntegration: true,
             nodeIntegrationInWorker: true,
             webSecurity: false,
