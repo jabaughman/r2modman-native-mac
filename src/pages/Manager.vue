@@ -161,6 +161,7 @@ import { DataFolderProvider } from '../providers/ror2/system/DataFolderProvider'
 import InteractionProvider from '../providers/ror2/system/InteractionProvider';
 
 import { homedir } from 'os';
+import { desktopProfileLogs, profileLogScope } from '../utils/DesktopProfileLogs';
 import * as path from 'path';
 import FsProvider from '../providers/generic/file/FsProvider';
 import DownloadModModal from '../components/views/DownloadModModal.vue';
@@ -482,31 +483,15 @@ import ModalCard from '../components/ModalCard.vue';
 			this.settings.setIgnoreCache(!this.settings.getContext().global.ignoreCache);
 		}
 
-		async copyLogToClipboard() {
-            const fs = FsProvider.instance;
-            let logOutputPath = "";
-            switch (this.activeGame.packageLoader) {
-                case PackageLoader.BEPINEX:
-                    logOutputPath = path.join(this.profile.getPathOfProfile(), "BepInEx", "LogOutput.log");
-                    break;
-                case PackageLoader.MELON_LOADER:
-                    logOutputPath = path.join(this.profile.getPathOfProfile(), "MelonLoader", "Latest.log");
-                    break;
-				case PackageLoader.RETURN_OF_MODDING:
-                    logOutputPath = path.join(this.profile.getPathOfProfile(), "ReturnOfModding", "LogOutput.log");
-                    break;
-            }
-            const text = (await fs.readFile(logOutputPath)).toString();
+        async copyLogToClipboard() {
             try {
-                if (text.length >= 1992) {
-                    await InteractionProvider.instance.copyToClipboard(text);
-                } else {
-                    await InteractionProvider.instance.copyToClipboard("```\n" + text + "\n```");
-                }
+                const scope = profileLogScope(this.activeGame.internalFolderName, this.profile.getProfileName(), this.activeGame.packageLoader);
+                if (!scope) throw new Error('This loader does not provide a supported profile log');
+                await desktopProfileLogs().copy(scope);
             } catch (e) {
                 this.$store.commit('error/handleError', R2Error.fromThrownValue(e));
             }
-		}
+        }
 
         async changeDataFolder() {
             try {

@@ -15,6 +15,7 @@ import LogOutput from './r2mm/data/LogOutput';
 import LogOutputProvider from './providers/ror2/data/LogOutputProvider';
 import ThunderstoreDownloaderProvider from './providers/ror2/downloading/ThunderstoreDownloaderProvider';
 import BetterThunderstoreDownloader from './r2mm/downloading/BetterThunderstoreDownloader';
+import { desktopProfileLogs } from './utils/DesktopProfileLogs';
 import { desktopLifecycle } from './utils/DesktopLifecycle';
 import R2Error from './model/errors/R2Error';
 import PathResolver from './r2mm/manager/PathResolver';
@@ -89,6 +90,7 @@ export default class App extends mixins(UtilityMixin) {
 
             await FileUtils.ensureDirectory(PathResolver.APPDATA_DIR);
 
+            await desktopProfileLogs().setDataRoot(PathResolver.ROOT);
             await ThemeManager.apply();
             ManagerInformation.IS_PORTABLE = startup.isPortable;
             LoggerProvider.instance.Log(LogSeverity.INFO, `Starting manager on version ${ManagerInformation.VERSION.toString()}`);
