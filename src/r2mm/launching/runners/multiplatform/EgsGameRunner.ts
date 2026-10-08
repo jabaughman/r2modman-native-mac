@@ -5,7 +5,7 @@ import Profile from '../../../../model/Profile';
 import GameInstructions from '../../instructions/GameInstructions';
 import GameInstructionParser from '../../instructions/GameInstructionParser';
 import FsProvider from '../../../../providers/generic/file/FsProvider';
-import { shell } from 'electron';
+import { desktopShell } from '../../../../utils/DesktopShell';
 import { PackageLoader } from '../../../../model/installing/PackageLoader';
 import { DynamicGameInstruction } from '../../instructions/DynamicGameInstruction';
 import * as path from 'path';
@@ -82,9 +82,7 @@ export default class EgsGameRunner extends GameRunnerProvider {
 
     async start(game: Game, args: string): Promise<void | R2Error> {
         try {
-            // Ignore errors to allow Thunderstore Mod Manager build without errors
-            // @ts-ignore
-            await shell.openPath(`com.epicgames.launcher://apps/${game.activePlatform.storeIdentifier}?action=launch&silent=true`);
+            await desktopShell().launchEpic(String(game.activePlatform.storeIdentifier));
         } catch (e) {
             const err: Error = e as Error;
             return new R2Error("Failed to start the game", err.message, null);

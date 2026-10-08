@@ -44,6 +44,7 @@ node test/security/valheim-launch.js
 node test/security/local-overrides.js
 node test/security/dialog-bridge.js
 node test/security/lifecycle-bridge.js
+node test/security/shell-bridge.js
 ```
 
 The legacy renderer still requires Node integration, disabled context isolation, and disabled web security. Updating Electron does not remove those architectural limitations. The existing Vue 2 / Quasar build toolchain also remains in place.
@@ -56,4 +57,4 @@ After replacing a mod's files with an author-provided Mac build, expand that mod
 
 **Restore local backup** restores the saved plugin files and enables protection again. Enable a disabled mod before creating or restoring its backup. Release protection retains the backup; protecting again after release replaces it with a snapshot of the current files. These snapshots contain the replacement you protected, not an automatic copy of the original catalog package. Game saves and configuration files are outside this backup. Profile sharing does not transfer these local snapshots.
 
-The renderer isolation inventory and first preload migration are documented in [docs/renderer-isolation.md](docs/renderer-isolation.md). Native pickers, startup metadata, updater setup, clipboard, restart and install notifications use narrow preload APIs; the remaining Node-dependent renderer services still need migration before isolation can be enabled.
+The renderer isolation inventory and first preload migration are documented in [docs/renderer-isolation.md](docs/renderer-isolation.md). Native pickers, startup metadata, updater setup, clipboard, restart, install notifications and desktop shell operations use narrow preload APIs; the remaining Node-dependent renderer services still need migration before isolation can be enabled.

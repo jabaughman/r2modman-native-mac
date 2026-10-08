@@ -23,8 +23,9 @@ export default class AppWrapper extends Vue {
         console.error(error.name, error.message, error.stack);
     }
 
-    openLink(url: string) {
-        new LinkImpl().openLink(url);
+    async openLink(url: string) {
+        try { await new LinkImpl().openLink(url); }
+        catch (e) { this.logError(R2Error.fromThrownValue(e)); }
     }
 }
 </script>

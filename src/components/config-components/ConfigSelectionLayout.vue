@@ -156,8 +156,9 @@ import ProfileModList from '../../r2mm/mods/ProfileModList';
             this.$emit("edit", file);
         }
 
-        openConfig(file: ConfigFile) {
-            LinkProvider.instance.openLink(file.getPath());
+        async openConfig(file: ConfigFile) {
+            try { await LinkProvider.instance.openLink(file.getPath()); }
+            catch (e) { this.$store.commit('error/handleError', R2Error.fromThrownValue(e)); }
         }
 
     }
