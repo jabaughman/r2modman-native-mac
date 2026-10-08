@@ -133,7 +133,8 @@
 <script lang='ts'>
 import * as path from 'path';
 
-import { ipcRenderer } from 'electron';
+import { desktopLifecycle } from '../utils/DesktopLifecycle';
+import R2Error from '../model/errors/R2Error';
 import Component, { mixins } from 'vue-class-component';
 
 import { Hero, Link, Progress } from '../components/all';
@@ -165,14 +166,16 @@ export default class Splash extends mixins(SplashMixin) {
     ];
 
     // Ensure that r2modman isn't outdated.
-    private checkForUpdates() {
+    private async checkForUpdates() {
         this.loadingText = 'Preparing';
-        ipcRenderer.once('update-done', async () => {
+        try {
+            await desktopLifecycle().prepareUpdates();
             this.getRequestItem('UpdateCheck').setProgress(100);
             await this.getExclusions();
             await this.getThunderstoreMods();
-        });
-        ipcRenderer.send('update-app');
+        } catch (e) {
+            this.$store.commit('error/handleError', R2Error.fromThrownValue(e, 'Desktop update setup failed'));
+        }
     }
 
     async moveToNextScreen() {

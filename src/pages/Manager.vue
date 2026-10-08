@@ -385,12 +385,13 @@ import ModalCard from '../components/ModalCard.vue';
 				this.$store.commit('error/handleError', err);
 				return;
 			}
-			const exportErr = await ProfileModList.exportModListAsCode(this.profile, (code: string, err: R2Error | null) => {
+			const exportErr = await ProfileModList.exportModListAsCode(this.profile, async (code: string, err: R2Error | null) => {
 				if (err !== null) {
 					this.$store.commit('error/handleError', err);
 				} else {
 					this.exportCode = code;
-					InteractionProvider.instance.copyToClipboard(code);
+					try { await InteractionProvider.instance.copyToClipboard(code); }
+                    catch (e) { this.$store.commit('error/handleError', R2Error.fromThrownValue(e)); }
 				}
 			});
 			if (exportErr instanceof R2Error) {
@@ -494,10 +495,14 @@ import ModalCard from '../components/ModalCard.vue';
                     break;
             }
             const text = (await fs.readFile(logOutputPath)).toString();
-            if (text.length >= 1992) {
-                InteractionProvider.instance.copyToClipboard(text);
-            } else {
-                InteractionProvider.instance.copyToClipboard("```\n" + text + "\n```");
+            try {
+                if (text.length >= 1992) {
+                    await InteractionProvider.instance.copyToClipboard(text);
+                } else {
+                    await InteractionProvider.instance.copyToClipboard("```\n" + text + "\n```");
+                }
+            } catch (e) {
+                this.$store.commit('error/handleError', R2Error.fromThrownValue(e));
             }
 		}
 
@@ -512,7 +517,7 @@ import ModalCard from '../components/ModalCard.vue';
                 await DataFolderProvider.instance.throwForInvalidFolder(folder);
                 await DataFolderProvider.instance.writeOverrideFile(folder);
                 await this.settings.setDataDirectory(folder);
-                InteractionProvider.instance.restartApp();
+                await InteractionProvider.instance.restartApp();
             } catch(err) {
                 this.$store.commit("error/handleError", R2Error.fromThrownValue(err));
                 return
@@ -609,11 +614,17 @@ import ModalCard from '../components/ModalCard.vue';
             this.$store.commit('modFilters/reset');
         }
 
+        private unsubscribeInstall: (() => void) | undefined;
+
+        beforeDestroy() {
+            if (this.unsubscribeInstall) this.unsubscribeInstall();
+        }
+
 		async created() {
 			this.launchParametersModel = this.settings.getContext().gameSpecific.launchParameters;
 			const ignoreCache = this.settings.getContext().global.ignoreCache;
 
-			InteractionProvider.instance.hookModInstallProtocol(async data => {
+			this.unsubscribeInstall = InteractionProvider.instance.hookModInstallProtocol(async data => {
                 const combo: ThunderstoreCombo | R2Error = ThunderstoreCombo.fromProtocol(data, this.thunderstoreModList);
                 if (combo instanceof R2Error) {
                     this.$store.commit('error/handleError', {

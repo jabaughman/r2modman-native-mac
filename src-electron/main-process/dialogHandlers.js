@@ -1,3 +1,4 @@
+const { authorizeSender } = require('./trustedSender');
 // Narrow, validated main-process API; no arbitrary IPC channels or dialog properties.
 function validateOptions(options, kind) {
     if (!options || typeof options !== 'object' || Array.isArray(options)) throw new Error('Invalid dialog options');
@@ -24,11 +25,7 @@ function validateOptions(options, kind) {
 function registerDialogHandlers(ipcMain, dialog, getWindow, appUrl) {
     for (const kind of ['file', 'folder']) {
         ipcMain.handle(`desktop:select-${kind}`, async (event, options) => {
-            const window = getWindow();
-            const frame = event.senderFrame;
-            if (!window || window.isDestroyed() || event.sender !== window.webContents || !frame
-                || frame !== window.webContents.mainFrame
-                || frame.url.split('#')[0] !== appUrl.split('#')[0]) throw new Error('Untrusted dialog sender');
+            const window = authorizeSender(event, getWindow, appUrl);
             const result = await dialog.showOpenDialog(window, validateOptions(options, kind));
             return result.canceled ? [] : result.filePaths;
         });

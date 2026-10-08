@@ -2,13 +2,13 @@ import InteractionProvider, {
     InteractionProviderFileProperties,
     InteractionProviderFolderProperties
 } from '../../providers/ror2/system/InteractionProvider';
-import { clipboard, ipcRenderer } from 'electron';
+import { desktopLifecycle } from '../../utils/DesktopLifecycle';
 import { desktopDialogs } from '../../utils/DesktopDialogs';
 
 export default class InteractionProviderImpl extends InteractionProvider {
 
-    restartApp(): void {
-        ipcRenderer.send('restart');
+    restartApp(): Promise<void> {
+        return desktopLifecycle().restart();
     }
 
     async selectFolder(options: InteractionProviderFolderProperties): Promise<string[]> {
@@ -20,15 +20,15 @@ export default class InteractionProviderImpl extends InteractionProvider {
     }
 
 
-    hookModInstallProtocol(callback: (data: any) => void) {
-        ipcRenderer.removeAllListeners('install-from-thunderstore-string');
-        ipcRenderer.on('install-from-thunderstore-string', (_sender: any, data: string) => {
-            callback(data);
-        });
+    private unsubscribeInstall: (() => void) | undefined;
+
+    hookModInstallProtocol(callback: (data: string) => void): () => void {
+        if (this.unsubscribeInstall) this.unsubscribeInstall();
+        this.unsubscribeInstall = desktopLifecycle().onInstallRequest(callback);
+        return this.unsubscribeInstall;
     }
 
-
-    copyToClipboard(value: string) {
-        clipboard.writeText(value);
+    copyToClipboard(value: string): Promise<void> {
+        return desktopLifecycle().copyText(value);
     }
 }

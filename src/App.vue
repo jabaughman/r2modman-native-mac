@@ -15,7 +15,8 @@ import LogOutput from './r2mm/data/LogOutput';
 import LogOutputProvider from './providers/ror2/data/LogOutputProvider';
 import ThunderstoreDownloaderProvider from './providers/ror2/downloading/ThunderstoreDownloaderProvider';
 import BetterThunderstoreDownloader from './r2mm/downloading/BetterThunderstoreDownloader';
-import { ipcRenderer } from 'electron';
+import { desktopLifecycle } from './utils/DesktopLifecycle';
+import R2Error from './model/errors/R2Error';
 import PathResolver from './r2mm/manager/PathResolver';
 import path from 'path';
 import ThemeManager from './r2mm/manager/ThemeManager';
@@ -67,8 +68,9 @@ export default class App extends mixins(UtilityMixin) {
         InstallationRuleApplicator.apply();
         InstallationRules.validate();
 
-        ipcRenderer.once('receive-appData-directory', async (_sender: any, appData: string) => {
-            PathResolver.APPDATA_DIR = path.join(appData, 'r2modmanPlus-local');
+        try {
+            const startup = await desktopLifecycle().getStartupInfo();
+            PathResolver.APPDATA_DIR = path.join(startup.appData, 'r2modmanPlus-local');
             // Legacy path. Needed for migration.
             PathResolver.CONFIG_DIR = path.join(PathResolver.APPDATA_DIR, "config");
 
@@ -88,14 +90,12 @@ export default class App extends mixins(UtilityMixin) {
             await FileUtils.ensureDirectory(PathResolver.APPDATA_DIR);
 
             await ThemeManager.apply();
-            ipcRenderer.once('receive-is-portable', async (_sender: any, isPortable: boolean) => {
-                ManagerInformation.IS_PORTABLE = isPortable;
-                LoggerProvider.instance.Log(LogSeverity.INFO, `Starting manager on version ${ManagerInformation.VERSION.toString()}`);
-                this.visible = true;
-            });
-            ipcRenderer.send('get-is-portable');
-        });
-        ipcRenderer.send('get-appData-directory');
+            ManagerInformation.IS_PORTABLE = startup.isPortable;
+            LoggerProvider.instance.Log(LogSeverity.INFO, `Starting manager on version ${ManagerInformation.VERSION.toString()}`);
+            this.visible = true;
+        } catch (e) {
+            this.$store.commit('error/handleError', { error: R2Error.fromThrownValue(e, 'Desktop startup failed'), severity: LogSeverity.ACTION_STOPPED });
+        }
 
         this.$watch('$q.dark.isActive', () => {
             document.documentElement.classList.toggle('html--dark', this.$q.dark.isActive);

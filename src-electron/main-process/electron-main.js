@@ -1,5 +1,5 @@
-import { app, BrowserWindow, ipcMain, nativeTheme, protocol } from 'electron';
-import Listeners from './ipcListeners';
+import { app, BrowserWindow, nativeTheme, protocol } from 'electron';
+import Listeners, { forwardInstallRequest } from './ipcListeners';
 import Persist from './window-state-persist';
 import path from 'path';
 import ipcServer from 'node-ipc';
@@ -89,7 +89,7 @@ app.on('ready', () => {
             '/tmp/app.r2mm',
             () => {
                 ipcServer.server.on('install', (res) => {
-                    ipcMain.emit('install-via-thunderstore', res);
+                    forwardInstallRequest(res);
                 });
             }
         );

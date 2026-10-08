@@ -6,8 +6,8 @@ The renderer currently uses Node integration, Node integration in workers, disab
 
 | Area | Current access | Migration work remaining |
 | --- | --- | --- |
-| Startup and updater | `src/App.vue`, `src/pages/Splash.vue` use raw Electron IPC for app-data, portability, and update notifications | Named lifecycle methods and typed notifications |
-| User interactions | `InteractionProviderImpl` uses Electron clipboard, restart IPC, and protocol events | Move clipboard/restart/protocol subscriptions; strip event objects from notifications |
+| Startup and updater | Startup metadata and updater setup now use named preload requests | Completed; metadata preserves existing portability rules |
+| User interactions | Clipboard/restart use named preload requests; install subscriptions pass only strings and return cleanup functions | Completed; shell actions remain separate |
 | Native pickers | File and folder selection now use `window.r2modmanDialogs` | Completed: two named invoke methods, main-frame authorization and validated options |
 | External links and file reveal | `LinkImpl` calls Electron shell; `EgsGameRunner` opens a launcher link | Constrained URL schemes and file-reveal API |
 | File reads/writes | `NodeFs`, `SafePaths`, `LocalModOverrides`, and `LocalModCard` use Node filesystem APIs | Main-process file service with profile/cache scope and path validation |
@@ -29,3 +29,11 @@ Migrate remaining Electron APIs, then filesystem/download/install/launch service
 Run `node test/security/dialog-bridge.js` for concurrent requests, cancellation, forged sender/frame rejection, option validation, and both preload exposure modes. Build and exercise the packaged file and folder pickers as a separate smoke test.
 
 Reference: [Electron IPC guidance](https://www.electronjs.org/docs/latest/tutorial/ipc).
+
+## Lifecycle and notifications migration
+
+`r2modmanDesktop` exposes startup metadata, update setup, clipboard text writes, application restart, and an install-request subscription. Each request uses the same main-window/main-frame/document authorization as dialogs. Clipboard requests require a string of at most 16 MiB. Protocol transport is handled internally in the main process; only supported Thunderstore install strings are forwarded to the trusted app document. Renderer subscriptions never receive Electron events and are disposed when the manager view closes.
+
+Updater setup preserves the macOS opt-out and existing Windows/Linux policy. Its promise acknowledges setup, not completion of an update download; check failures are logged without blocking catalog loading. Startup and clipboard consumers await responses and report failures. No renderer module uses raw Electron IPC after this migration; the two direct Electron imports still remaining use `shell` for external links/file reveal and Epic launching.
+
+Run `node test/security/lifecycle-bridge.js` for method routing, sender/payload validation, notification filtering and disposal. Restart behavior is unit-tested with mocked app services; tests do not restart the user's machine.

@@ -5,15 +5,15 @@ import InteractionProvider, {
 
 export default class StubInteractionProvider extends InteractionProvider {
 
-    copyToClipboard(value: string): void {
+    async copyToClipboard(value: string): Promise<void> {
         throw new Error("Stub access must be mocked or spied");
     }
 
-    hookModInstallProtocol(callback: (data: any) => void): void {
+    hookModInstallProtocol(callback: (data: string) => void): () => void {
         throw new Error("Stub access must be mocked or spied");
     }
 
-    restartApp(): void {
+    async restartApp(): Promise<void> {
         throw new Error("Stub access must be mocked or spied");
     }
 
