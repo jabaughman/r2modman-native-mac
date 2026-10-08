@@ -7,6 +7,9 @@ import ManifestV2 from '../../../model/ManifestV2';
 import ThunderstoreMod from '../../../model/ThunderstoreMod';
 import { LogSeverity } from '../../../providers/ror2/logging/LoggerProvider';
 import Dependants from '../../../r2mm/mods/Dependants';
+import Profile from '../../../model/Profile';
+import * as fs from 'fs-extra';
+import * as LocalOverrides from '../../../utils/LocalModOverrides';
 import { valueToReadableDate } from '../../../utils/DateUtils';
 
 @Component({
@@ -20,6 +23,40 @@ export default class LocalModCard extends Vue {
 
     @Prop({required: true})
     readonly mod!: ManifestV2;
+
+    localProtected = false;
+    localBackup = false;
+    localAvailable = false;
+    overridePending = false;
+
+    async mounted() {
+        try { await this.refreshOverride(); }
+        catch (e) { this.$store.commit('error/handleError', { error: R2Error.fromThrownValue(e), severity: LogSeverity.ACTION_STOPPED }); }
+    }
+
+    async refreshOverride() {
+        const profile = Profile.getActiveProfile().getPathOfProfile();
+        this.localAvailable = await fs.pathExists((await LocalOverrides.overridePaths(profile, this.mod.getName())).directory);
+        this.localProtected = await LocalOverrides.isLocalOverride(profile, this.mod.getName());
+        this.localBackup = await LocalOverrides.hasLocalBackup(profile, this.mod.getName());
+    }
+
+    async changeOverride(action: string) {
+        if (this.overridePending) return;
+        this.overridePending = true;
+        try {
+            if (action !== 'release' && !this.mod.isEnabled()) throw new Error('Enable this mod before backing up or restoring its files.');
+            const profile = Profile.getActiveProfile().getPathOfProfile();
+            if (action === 'protect') await LocalOverrides.protectLocalOverride(profile, this.mod.getName());
+            if (action === 'release') await LocalOverrides.releaseLocalOverride(profile, this.mod.getName());
+            if (action === 'restore') await LocalOverrides.restoreLocalOverride(profile, this.mod.getName());
+            await this.refreshOverride();
+        } catch (e) {
+            this.$store.commit('error/handleError', { error: R2Error.fromThrownValue(e), severity: LogSeverity.ACTION_STOPPED });
+        } finally {
+            this.overridePending = false;
+        }
+    }
 
     disabledDependencies: ManifestV2[] = [];
     missingDependencies: string[] = [];
@@ -210,6 +247,7 @@ function dependencyStringToModName(x: string) {
                     v-tooltip.right="'This mod will not be used in-game'">
                     Disabled
                 </span>
+                <span v-if="localProtected" class="tag is-warning margin-right margin-right--half-width">Local replacement protected</span>
                 <span class="card-title selectable">
                     <component :is="mod.isEnabled() ? 'span' : 'strike'" class="selectable">
                         {{mod.getDisplayName()}}
@@ -258,6 +296,10 @@ function dependencyStringToModName(x: string) {
                 </div>
             </span>
         </template>
+
+        <a v-if="localAvailable && !localProtected && mod.isEnabled()" @click="changeOverride('protect')" class="card-footer-item">Protect local files</a>
+        <a v-if="localProtected" @click="changeOverride('release')" class="card-footer-item">Release protection</a>
+        <a v-if="localBackup && mod.isEnabled()" @click="changeOverride('restore')" class="card-footer-item">Restore local backup</a>
 
         <!-- Show bottom button row -->
         <a @click="uninstallMod()" class='card-footer-item'>

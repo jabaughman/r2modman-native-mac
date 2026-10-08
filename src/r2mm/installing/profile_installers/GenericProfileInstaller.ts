@@ -1,3 +1,4 @@
+import { guardLocalOverride } from '../../../utils/LocalModOverrides';
 import ProfileInstallerProvider from '../../../providers/ror2/installing/ProfileInstallerProvider';
 import ManifestV2 from '../../../model/ManifestV2';
 import Profile from '../../../model/Profile';
@@ -151,6 +152,8 @@ export default class GenericProfileInstaller extends ProfileInstallerProvider {
     }
 
     async installMod(mod: ManifestV2, profile: Profile): Promise<R2Error | null> {
+        const protectedError = await guardLocalOverride(profile.getPathOfProfile(), mod.getName());
+        if (protectedError) return protectedError;
         const args = this.getInstallArgs(mod, profile);
 
         // Installation logic for mod loaders.
@@ -289,6 +292,8 @@ export default class GenericProfileInstaller extends ProfileInstallerProvider {
     }
 
     async uninstallMod(mod: ManifestV2, profile: Profile): Promise<R2Error | null> {
+        const protectedError = await guardLocalOverride(profile.getPathOfProfile(), mod.getName());
+        if (protectedError) return protectedError;
         // Support for installer specific uninstall methods are rolled out
         // gradually and therefore might not be defined yet.
         try {
