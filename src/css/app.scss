@@ -1,0 +1,18 @@
+@charset "utf-8";
+@import "quasar.css";
+@import "fontawesome-free-5.11.2/css/all.min.css";
+
+// IMPORTANT:
+// Do not use dollar signs in this file, as it causes Quasar to import its variables, which infects bulma's defaults.
+// If you need to use dollar signs, consider creating a new file that contains them and importing that file from here instead.
+
+@import "scheme/light";
+@import "scheme/dark";
+@import "scheme/funky";
+
+@import "~bulma";
+@import "~bulma-steps";
+@import "~bulma-divider";
+@import "~bulma-slider";
+
+@import "custom";
