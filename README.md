@@ -46,6 +46,7 @@ node test/security/dialog-bridge.js
 node test/security/lifecycle-bridge.js
 node test/security/shell-bridge.js
 node test/security/profile-log-bridge.js
+node test/security/profile-config-bridge.js
 ```
 
 The legacy renderer still requires Node integration, disabled context isolation, and disabled web security. Updating Electron does not remove those architectural limitations. The existing Vue 2 / Quasar build toolchain also remains in place.
