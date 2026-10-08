@@ -28,7 +28,13 @@ const shell = Object.freeze({
     launchEpic: identifier => ipcRenderer.invoke('desktop:launch-epic', identifier)
 });
 
-for (const [name, api] of [['r2modmanDialogs', dialogs], ['r2modmanDesktop', desktop], ['r2modmanShell', shell]]) {
+const profileLogs = Object.freeze({
+    setDataRoot: root => ipcRenderer.invoke('desktop:set-log-data-root', root),
+    exists: scope => ipcRenderer.invoke('desktop:profile-log-exists', scope),
+    copy: scope => ipcRenderer.invoke('desktop:copy-profile-log', scope)
+});
+
+for (const [name, api] of [['r2modmanDialogs', dialogs], ['r2modmanDesktop', desktop], ['r2modmanShell', shell], ['r2modmanProfileLogs', profileLogs]]) {
     if (process.contextIsolated) {
         contextBridge.exposeInMainWorld(name, api);
     } else {

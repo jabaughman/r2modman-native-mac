@@ -1,11 +1,8 @@
 import Profile from '../../model/Profile';
-import * as path from 'path';
-import FsProvider from '../../providers/generic/file/FsProvider';
+import { desktopProfileLogs, profileLogScope } from '../../utils/DesktopProfileLogs';
 import GameManager from '../../model/game/GameManager';
-import { PackageLoader } from '../../model/installing/PackageLoader';
 import Timeout = NodeJS.Timeout;
 
-let fs: FsProvider;
 
 export default class LogOutput {
 
@@ -22,8 +19,6 @@ export default class LogOutput {
     }
 
     private constructor() {
-        fs = FsProvider.instance;
-
         this.confirmOutputExists();
 
         LogOutput.INTERVAL = setInterval(() => {
@@ -31,23 +26,21 @@ export default class LogOutput {
         }, 1000);
     }
 
-    private confirmOutputExists() {
+    private checking = false;
+
+    private async confirmOutputExists() {
+        if (this.checking) return;
         const game = GameManager.activeGame;
-        switch (game.packageLoader) {
-            case PackageLoader.BEPINEX:
-                fs.exists(path.join(Profile.getActiveProfile().getPathOfProfile(), 'BepInEx', 'LogOutput.log'))
-                    .then(value => this._exists = value);
-                break;
-            case PackageLoader.RETURN_OF_MODDING:
-                fs.exists(path.join(Profile.getActiveProfile().getPathOfProfile(), 'ReturnOfModding', 'LogOutput.log'))
-                    .then(value => this._exists = value);
-                break;
-            case PackageLoader.MELON_LOADER:
-            case PackageLoader.NORTHSTAR:
-                fs.exists(path.join(Profile.getActiveProfile().getPathOfProfile(), 'MelonLoader', 'Latest.log'))
-                    .then(value => this._exists = value);
-                break;
-        }
+        const profile = Profile.getActiveProfile();
+        if (!game || !profile) { this._exists = false; return; }
+        const scope = profileLogScope(game.internalFolderName, profile.getProfileName(), game.packageLoader);
+        if (!scope) { this._exists = false; return; }
+        this.checking = true;
+        try {
+            const exists = await desktopProfileLogs().exists(scope);
+            if (game === GameManager.activeGame && profile === Profile.getActiveProfile()) this._exists = exists;
+        } catch (_) { this._exists = false; }
+        finally { this.checking = false; }
     }
 
     get exists(): boolean {
