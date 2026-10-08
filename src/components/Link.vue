@@ -12,6 +12,7 @@
 
 <script lang='ts'>
 import Vue from 'vue';
+import R2Error from '../model/errors/R2Error';
 import { Component, Prop } from 'vue-property-decorator';
 import LinkProvider from '../providers/components/LinkProvider';
 
@@ -27,12 +28,14 @@ import LinkProvider from '../providers/components/LinkProvider';
         @Prop({default: 'a'})
         tag: string | undefined;
 
-        openLink() {
-            LinkProvider.instance.openLink(this.url!);
+        async openLink() {
+            try { await LinkProvider.instance.openLink(this.url!); }
+            catch (e) { this.$store.commit('error/handleError', R2Error.fromThrownValue(e)); }
         }
 
-        selectFile() {
-            LinkProvider.instance.selectFile(this.url!)
+        async selectFile() {
+            try { await LinkProvider.instance.selectFile(this.url!); }
+            catch (e) { this.$store.commit('error/handleError', R2Error.fromThrownValue(e)); }
         }
     }
 </script>

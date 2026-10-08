@@ -243,7 +243,7 @@ export default class ProfileModList {
         }
         const exportPath = path.join(dir[0], `${profile.getProfileName()}_${new Date().getTime()}.r2z`);
         await builder.createZip(exportPath);
-        LinkProvider.instance.selectFile(exportPath);
+        await LinkProvider.instance.selectFile(exportPath);
         return exportPath;
     }
 

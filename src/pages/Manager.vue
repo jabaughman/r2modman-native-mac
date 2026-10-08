@@ -399,12 +399,14 @@ import ModalCard from '../components/ModalCard.vue';
 			}
 		}
 
-		browseDataFolder() {
-            LinkProvider.instance.openLink('file://' + PathResolver.ROOT);
+		async browseDataFolder() {
+            try { await LinkProvider.instance.openLink(PathResolver.ROOT); }
+            catch (e) { this.$store.commit('error/handleError', R2Error.fromThrownValue(e)); }
 		}
 
-        browseProfileFolder() {
-            LinkProvider.instance.openLink('file://' + this.profile.getPathOfProfile());
+        async browseProfileFolder() {
+            try { await LinkProvider.instance.openLink(this.profile.getPathOfProfile()); }
+            catch (e) { this.$store.commit('error/handleError', R2Error.fromThrownValue(e)); }
 		}
 
 		toggleCardExpanded(expanded: boolean) {

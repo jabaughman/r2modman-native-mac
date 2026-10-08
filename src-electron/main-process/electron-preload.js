@@ -20,7 +20,15 @@ const desktop = Object.freeze({
     }
 });
 
-for (const [name, api] of [['r2modmanDialogs', dialogs], ['r2modmanDesktop', desktop]]) {
+const shell = Object.freeze({
+    openExternal: url => ipcRenderer.invoke('desktop:open-external', url),
+    openLocal: path => ipcRenderer.invoke('desktop:open-local', path),
+    revealLocal: path => ipcRenderer.invoke('desktop:reveal-local', path),
+    verifySteam: identifier => ipcRenderer.invoke('desktop:verify-steam', identifier),
+    launchEpic: identifier => ipcRenderer.invoke('desktop:launch-epic', identifier)
+});
+
+for (const [name, api] of [['r2modmanDialogs', dialogs], ['r2modmanDesktop', desktop], ['r2modmanShell', shell]]) {
     if (process.contextIsolated) {
         contextBridge.exposeInMainWorld(name, api);
     } else {
